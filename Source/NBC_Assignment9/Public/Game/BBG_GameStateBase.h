@@ -13,4 +13,8 @@ UCLASS()
 class NBC_ASSIGNMENT9_API ABBG_GameStateBase : public AGameStateBase
 {
 	GENERATED_BODY()
+	
+public:
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPCBroadcastLoginMessage(const FString& InNameString = FString((TEXT("XXXXXX"))));
 };

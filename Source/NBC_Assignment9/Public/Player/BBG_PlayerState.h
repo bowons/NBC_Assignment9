@@ -17,4 +17,18 @@ class NBC_ASSIGNMENT9_API ABBG_PlayerState : public APlayerState
 public:
 	ABBG_PlayerState();
 	
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+
+	FString GetPlayerInfoString() const;
+	
+public:
+	UPROPERTY(Replicated)
+	FString PlayerNameString;
+	
+	UPROPERTY(Replicated)
+	int32 CurrentGuessCount;
+	
+	UPROPERTY(Replicated)
+	int32 MaxGuessCount;
+	
 };

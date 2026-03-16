@@ -19,4 +19,5 @@ public:
 	virtual void OnPostLogin(AController* NewPlayer) override;
 	
 	void ResetGame();
+	
 };
