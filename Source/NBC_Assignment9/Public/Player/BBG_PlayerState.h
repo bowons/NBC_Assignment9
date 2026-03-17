@@ -32,4 +32,7 @@ public:
 	UPROPERTY(Replicated)
 	int32 MaxGuessCount;
 	
+	UPROPERTY(Replicated)
+	bool bHasPlayedThisTurn;
+	
 };

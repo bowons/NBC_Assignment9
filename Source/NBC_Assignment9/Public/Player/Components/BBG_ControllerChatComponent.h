@@ -22,6 +22,8 @@ public:
 	void PrintChatMessageString(const FString& InChatMessageString) const;	
 	void PrintSystemMessage(const FString& InMessage) const;
 	
+	void ProcessGuessNumberString(const FString& InGuessNumberString);                                                                                                                                                                                           
+	
 	UFUNCTION(Client, Reliable)
 	void ClientRPCPrintChatMessageString(const FString& InChatMessageString);
 	UFUNCTION(Client, Reliable)
@@ -29,6 +31,8 @@ public:
 	
 	UFUNCTION(Server, Reliable)
 	void ServerRPCPrintChatMessageString(const FString& InChatMessageString);
+	UFUNCTION(Server, Reliable)                                                                                                                                                                                                                                  
+	void ServerRPCDoGuessNumber(const FString& InGuessNumberString);   
 	
 protected:
 	FString ChatMessageString;

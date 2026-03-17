@@ -4,6 +4,7 @@
 #include "Player/Components/BBG_ControllerChatComponent.h"
 
 #include "Game/BBG_GameModeBase.h"
+#include "Game/BBG_GameStateBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "Player/BBG_PlayerController.h"
 #include "Player/BBG_PlayerState.h"
@@ -50,6 +51,33 @@ void UBBG_ControllerChatComponent::PrintSystemMessage(const FString& InMessage) 
 		return;
 	
 	MainWidget->AddSystemMessage(InMessage);	
+}
+
+void UBBG_ControllerChatComponent::ProcessGuessNumberString(const FString& InGuessNumberString)
+{
+	const ABBG_PlayerController* PC = Cast<ABBG_PlayerController>(GetOwner());
+	if (IsValid(PC) == false || PC->IsLocalController() == false) return;
+	
+	if (const ABBG_GameStateBase* GS = GetWorld()->GetGameState<ABBG_GameStateBase>())
+	{
+		const int32 TurnIndex = GS->CurrentTurnPlayerIndex;
+		if (GS->PlayerArray.IsValidIndex(TurnIndex) == false
+			|| GS->PlayerArray[TurnIndex] != PC->GetPlayerState<ABBG_PlayerState>())
+		{
+			PrintSystemMessage(TEXT("현재 당신의 턴이 아닙니다."));
+			return;
+		}
+	}
+	ServerRPCDoGuessNumber(InGuessNumberString);
+}
+
+void UBBG_ControllerChatComponent::ServerRPCDoGuessNumber_Implementation(const FString& InGuessNumberString)
+{
+	ABBG_GameModeBase* GM = Cast<ABBG_GameModeBase>(UGameplayStatics::GetGameMode(this));
+	if (IsValid(GM))
+	{
+		GM->DoGuessingNumber(Cast<ABBG_PlayerController>(GetOwner()), InGuessNumberString);
+	}
 }
 
 void UBBG_ControllerChatComponent::ClientRPCPrintSystemMessage_Implementation(const FString& InSystemMessage)

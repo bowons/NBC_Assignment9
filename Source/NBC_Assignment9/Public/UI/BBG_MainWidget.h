@@ -34,16 +34,26 @@ protected:
 	
 	FTimerHandle NotificationTimerHandle;
 	
+	bool bIsGuessMode = false;
+	
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
 	
+	virtual FReply NativeOnPreviewKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
+	
 protected:
 	UFUNCTION()
-	void OnChatInputTextCommited(const FText& Text, ETextCommit::Type CommitMethod) const;
+	void OnChatInputTextCommited(const FText& Text, ETextCommit::Type CommitMethod);
 	
 public:
 	void AddChatMessage(const FString& InMessage) const;
 	void AddSystemMessage(const FString& InMessage) const;
-	void SetNotificationMessage(const FText& InMessage, const float InTimerDuration = 0.f);	
+	void SetNotificationMessage(const FText& InMessage, const float InTimerDuration = 0.f);
+	
+	UFUNCTION()
+	void UpdateTimerText(int32 InTime);
+	
+	UFUNCTION()
+	void UpdateTurnInfo(int32 InTurnIndex);
 };

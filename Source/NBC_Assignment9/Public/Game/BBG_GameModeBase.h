@@ -21,16 +21,22 @@ public:
 	virtual void Logout(AController* Exiting) override;
 	
 	static FString GenerateSecretNumber();
-	static bool IsGuessingNumberCorrect(const FString& InNumberString);
+	static bool IsGuessingNumberCorrect(const FString& InNumberString, FString& OutErrorMessage);
 	static void IncreaseGuessCount(const ABBG_PlayerController* InChattingPlayerController);
 	
 	void ResetGame();
 	
 	FString JudgeGuessNumber(const FString& InGuessString);
-	void JudgeGame(const ABBG_PlayerController* InChattingPlayerController, int32 StrikeCount);
+	bool JudgeGame(const ABBG_PlayerController* InChattingPlayerController, int32 StrikeCount);
 	
 	void PrintChatMessageToAll(ABBG_PlayerController* InChattingPlayerController, const FString& InChatMessageString);
-	void DoGuessingNumber(const ABBG_PlayerController* InGuessingPlayerController, const FString& InGuessNumberString);
+	void DoGuessingNumber(ABBG_PlayerController* InGuessingPlayerController, const FString& InGuessNumberString);
+	
+	void StartTurn(int32 PlayerIndex);
+	void OnTurnTimerTick();
+	void EndTurn(int32 PlayerIndex);
+	
+	bool CheckAndHandleDraw();
 	
 protected:
 	FString SecretNumberString;
@@ -39,4 +45,5 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Game")
 	int32 MaxGuessCount = 3;
 	
+	FTimerHandle TurnTimerHandle;
 };

@@ -13,8 +13,13 @@ void ABBG_GameModeBase::BeginPlay()
 {
 	Super::BeginPlay();
 
-	SecretNumberString = GenerateSecretNumber();
+	SecretNumberString = GenerateSecretNumber();	
 	UE_LOG(LogTemp, Error, TEXT("%s"), *SecretNumberString);
+	
+	ABBG_GameStateBase* BBGGS = GetGameState<ABBG_GameStateBase>();
+	BBGGS->CurrentTurnPlayerIndex = 0;
+	
+	StartTurn(BBGGS->CurrentTurnPlayerIndex);
 }
 
 void ABBG_GameModeBase::OnPostLogin(AController* NewPlayer)
@@ -80,7 +85,7 @@ FString ABBG_GameModeBase::GenerateSecretNumber()
 	return Result;
 }
 
-bool ABBG_GameModeBase::IsGuessingNumberCorrect(const FString& InNumberString)
+bool ABBG_GameModeBase::IsGuessingNumberCorrect(const FString& InNumberString, FString& OutErrorMessage)
 {
 	bool bCanPlay = false;
 
@@ -88,6 +93,7 @@ bool ABBG_GameModeBase::IsGuessingNumberCorrect(const FString& InNumberString)
 	{
 		if (InNumberString.Len() != 3)
 		{
+			OutErrorMessage = TEXT("3자리 숫자를 입력하세요.");
 			break;
 		}
 
@@ -98,6 +104,7 @@ bool ABBG_GameModeBase::IsGuessingNumberCorrect(const FString& InNumberString)
 			if (FChar::IsDigit(C) == false || C == '0')
 			{
 				bIsUnique = false;
+				OutErrorMessage = TEXT("1부터 9까지의 숫자만 입력하세요.");
 				break;
 			}
 
@@ -108,7 +115,13 @@ bool ABBG_GameModeBase::IsGuessingNumberCorrect(const FString& InNumberString)
 		{
 			break;
 		}
-
+		
+		if (UniqueDigits.Num() != 3)
+		{
+			OutErrorMessage = TEXT("중복되지 않은 숫자를 입력해주세요.");
+			break;
+		}
+		
 		bCanPlay = true;
 	}
 	while (false);
@@ -126,6 +139,7 @@ void ABBG_GameModeBase::ResetGame()
 		if (IsValid(BBGPS) == true)
 		{
 			BBGPS->CurrentGuessCount = 0;
+			BBGPS->bHasPlayedThisTurn = false;
 		}
 	}
 }
@@ -158,7 +172,7 @@ FString ABBG_GameModeBase::JudgeGuessNumber(const FString& InGuessString)
 	return FString::Printf(TEXT("%dS%dB"), StrikeCount, BallCount);
 }
 
-void ABBG_GameModeBase::JudgeGame(const ABBG_PlayerController* InChattingPlayerController, int32 StrikeCount)
+bool ABBG_GameModeBase::JudgeGame(const ABBG_PlayerController* InChattingPlayerController, int32 StrikeCount)
 {
 	if (3 == StrikeCount)
 	{
@@ -174,38 +188,9 @@ void ABBG_GameModeBase::JudgeGame(const ABBG_PlayerController* InChattingPlayerC
 			}
 		}
 		ResetGame();
+		return true;
 	}
-	else
-	{
-		bool bIsDraw = true;
-		for (const auto& BBGPC : AllPlayerControllers)
-		{
-			ABBG_PlayerState* BBGPS = BBGPC->GetPlayerState<ABBG_PlayerState>();
-			if (IsValid(BBGPS) == true)
-			{
-				if (BBGPS->CurrentGuessCount < BBGPS->MaxGuessCount)
-				{
-					bIsDraw = false;
-					break;
-				}
-			}
-			else
-			{
-				UE_LOG(LogTemp, Error, TEXT("ABBG_GameModeBase::JudgeGame() - BBGPS is not valid."));
-				return;
-			}
-		}
-
-		if (bIsDraw)
-		{
-			ABBG_GameStateBase* GS = GetGameState<ABBG_GameStateBase>();
-			if (IsValid(GS))
-			{
-				GS->MulticastRPCBroadcastSystemMessage(TEXT("무승부로 게임이 끝났습니다."));
-			}
-			ResetGame();
-		}
-	}
+	return CheckAndHandleDraw();
 }
 
 void ABBG_GameModeBase::PrintChatMessageToAll(ABBG_PlayerController* InChattingPlayerController,
@@ -231,35 +216,154 @@ void ABBG_GameModeBase::PrintChatMessageToAll(ABBG_PlayerController* InChattingP
 	}
 }
 
-void ABBG_GameModeBase::DoGuessingNumber(const ABBG_PlayerController* InGuessingPlayerController,
+void ABBG_GameModeBase::DoGuessingNumber(ABBG_PlayerController* InGuessingPlayerController,
                                          const FString& InGuessNumberString)
 {
-	FString GuessNumberString = InGuessNumberString;
-	if (IsGuessingNumberCorrect(GuessNumberString) == true)
+	ABBG_GameStateBase* GameStateBase = GetGameState<ABBG_GameStateBase>();
+	if (IsValid(GameStateBase))
 	{
-		FString JudgeResultString = JudgeGuessNumber(GuessNumberString);
-		IncreaseGuessCount(InGuessingPlayerController);;
-	
-		const ABBG_PlayerState* BBGPS = InGuessingPlayerController->GetPlayerState<ABBG_PlayerState>();
-		if (IsValid(BBGPS) == false)
+		int32 TurnIndex = GameStateBase->CurrentTurnPlayerIndex;
+		if (AllPlayerControllers.IsValidIndex(TurnIndex) == false)
 		{
-			UE_LOG(LogTemp, Error, TEXT("ABBG_GameModeBase::DoGuessingNumber() - BBGPS is not valid."))
+			UE_LOG(LogTemp, Error, TEXT("ABBG_GameModeBase::DoGuessingNumber() - TurnIndex is out of range."));			
 			return;
 		}
-
-		const FString CombinedMessageString = BBGPS->GetPlayerInfoString() + TEXT(":") + JudgeResultString;
 		
-		for (TObjectPtr<ABBG_PlayerController> BBGPC : AllPlayerControllers)
+		if (AllPlayerControllers[TurnIndex] != InGuessingPlayerController)
 		{
-			if (IsValid(BBGPC) == true)
-			{
-				BBGPC->GetControllerChatComponent()->ClientRPCPrintChatMessageString(CombinedMessageString);
-			}
+			InGuessingPlayerController->GetControllerChatComponent()
+				->ClientRPCPrintSystemMessage(TEXT("현재 당신의 턴이 아닙니다."));
+			return;
+		}
+	}
+	
+	ABBG_PlayerState* BBGPS = InGuessingPlayerController->GetPlayerState<ABBG_PlayerState>();
+	if (IsValid(BBGPS) && BBGPS->CurrentGuessCount >= BBGPS->MaxGuessCount)
+	{
+		InGuessingPlayerController->GetControllerChatComponent()->ClientRPCPrintSystemMessage(TEXT("기회를 모두 소진하였습니다."));
+		return;
+	}
+	
+	FString ErrorMessage;
+	if (IsGuessingNumberCorrect(InGuessNumberString, ErrorMessage) == false)
+	{
+		InGuessingPlayerController->GetControllerChatComponent()->ClientRPCPrintSystemMessage(ErrorMessage);
+		return;
+	}
+	
+	FString JudgeResultString = JudgeGuessNumber(InGuessNumberString);
+	IncreaseGuessCount(InGuessingPlayerController);
+	BBGPS->bHasPlayedThisTurn = true;
+	
+	const FString CombinedMessageString = BBGPS->GetPlayerInfoString() + TEXT(" Guess:") + JudgeResultString;
+	const FString GuessCountString = BBGPS->GetGuessCountString(); // 미리 저장
+	
+    for (TObjectPtr<ABBG_PlayerController> BBGPC : AllPlayerControllers)
+    {
+	    if (IsValid(BBGPC))
+	    	BBGPC->GetControllerChatComponent()->ClientRPCPrintSystemMessage(CombinedMessageString);
+    }
+	
+	int32 StrikeCount = FCString::Atoi(*JudgeResultString.Left(1));
+	bool bGameEnded = JudgeGame(InGuessingPlayerController, StrikeCount);
+	
+	InGuessingPlayerController->GetControllerChatComponent()
+		->ClientRPCPrintSystemMessage(GuessCountString);
+	
+	if (bGameEnded)
+	{
+		StartTurn(0);
+	} 
+	else if (BBGPS->CurrentGuessCount >= BBGPS->MaxGuessCount)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(TurnTimerHandle);
+		EndTurn(GameStateBase->CurrentTurnPlayerIndex);
+	}
+}
+
+void ABBG_GameModeBase::StartTurn(int32 PlayerIndex)
+{
+	// 30초로 Remaining Time 설정
+	ABBG_GameStateBase* GameStateBase = GetGameState<ABBG_GameStateBase>();
+	if (IsValid(GameStateBase) == false)
+	{
+		UE_LOG(LogTemp, Error, TEXT("ABBG_GameModeBase::StartTurn() - GameStateBase is not valid."));
+		return;
+	}
+	
+	GameStateBase->RemainingTime = 30;
+	GameStateBase->CurrentTurnPlayerIndex = PlayerIndex;
+	
+	// Timer로 시간 등록
+	GetWorld()->GetTimerManager().SetTimer( TurnTimerHandle, this, &ABBG_GameModeBase::OnTurnTimerTick, 1.f, true);
+}
+
+void ABBG_GameModeBase::OnTurnTimerTick()
+{
+	ABBG_GameStateBase* GameStateBase = GetGameState<ABBG_GameStateBase>();
+	GameStateBase->RemainingTime--;
+	
+	if (GameStateBase->RemainingTime <= 0)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(TurnTimerHandle);
+		EndTurn(GameStateBase->CurrentTurnPlayerIndex);
+	}
+}
+
+void ABBG_GameModeBase::EndTurn(int32 PlayerIndex)
+{
+	ABBG_GameStateBase* GameStateBase = GetGameState<ABBG_GameStateBase>();
+	if (IsValid(GameStateBase) == false) return;
+
+	if (AllPlayerControllers.IsValidIndex(PlayerIndex) == false) return;
+	
+	ABBG_PlayerController* CurrentPC = AllPlayerControllers[PlayerIndex];
+	ABBG_PlayerState* BBGPS = CurrentPC->GetPlayerState<ABBG_PlayerState>();
+	
+	if (IsValid(BBGPS))
+	{
+		if (BBGPS->bHasPlayedThisTurn == false)
+		{
+			IncreaseGuessCount(CurrentPC);
+			CurrentPC->GetControllerChatComponent()
+				->ClientRPCPrintSystemMessage(TEXT("시간 초과로 기회가 소진되었습니다."));
+		}
+		BBGPS->bHasPlayedThisTurn = false;
+	}
+	
+	if (CheckAndHandleDraw())
+	{
+		StartTurn(0);
+		return;
+	}
+
+	int32 NextIndex = (GameStateBase->CurrentTurnPlayerIndex + 1) % AllPlayerControllers.Num();
+	StartTurn(NextIndex);
+}
+
+bool ABBG_GameModeBase::CheckAndHandleDraw()
+{
+	for  (const auto& BBGPC : AllPlayerControllers)
+	{
+		ABBG_PlayerState* BBGPS = BBGPC->GetPlayerState<ABBG_PlayerState>();
+		if (IsValid(BBGPS) == false)
+		{
+			return false;
 		}
 		
-		int32 StrikeCount = FCString::Atoi(*JudgeResultString.Left(1));
-		JudgeGame(InGuessingPlayerController, StrikeCount);
+		if (BBGPS->CurrentGuessCount < BBGPS->MaxGuessCount)
+		{
+			return false; // 기회가 남은 플레이어가 존재
+		}
 	}
+	
+	ABBG_GameStateBase* GS = GetGameState<ABBG_GameStateBase>();
+	if (IsValid(GS))
+	{
+		GS->MulticastRPCBroadcastSystemMessage(TEXT("무승부로 게임이 끝났습니다."));
+	}
+	ResetGame();
+	return true;
 }
 
 void ABBG_GameModeBase::IncreaseGuessCount(const ABBG_PlayerController* InChattingPlayerController)

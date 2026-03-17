@@ -4,6 +4,7 @@
 #include "NBC_Assignment9/Public/Game/BBG_GameStateBase.h"
 
 #include "Kismet/GameplayStatics.h"
+#include "Net/UnrealNetwork.h"
 #include "Player/BBG_PlayerController.h"
 #include "Player/Components/BBG_ControllerChatComponent.h"
 
@@ -38,4 +39,22 @@ void ABBG_GameStateBase::MulticastRPCBroadcastSystemMessage_Implementation(const
 			}
 		}
 	}
+}
+
+void ABBG_GameStateBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	
+	DOREPLIFETIME(ThisClass, RemainingTime);
+	DOREPLIFETIME(ThisClass, CurrentTurnPlayerIndex);
+}
+
+void ABBG_GameStateBase::OnRep_RemainingTime()
+{
+	OnRemainingTimeChanged.Broadcast(RemainingTime);
+}
+
+void ABBG_GameStateBase::OnRep_CurrentTurnPlayerIndex()
+{
+	OnTurnChanged.Broadcast(CurrentTurnPlayerIndex);
 }

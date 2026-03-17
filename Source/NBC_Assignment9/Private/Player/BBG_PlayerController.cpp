@@ -7,7 +7,7 @@
 #include "Player/Components/BBG_ControllerChatComponent.h"
 #include "UI/BBG_MainWidget.h"
 
-ABBG_PlayerController::ABBG_PlayerController() : NotificationText(FText::FromString(TEXT("Notification")))
+ABBG_PlayerController::ABBG_PlayerController()
 {
 	bReplicates = true;
 	ControllerChatComponent = CreateDefaultSubobject<UBBG_ControllerChatComponent>(TEXT("ControllerChatComponent"));

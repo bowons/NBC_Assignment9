@@ -6,27 +6,72 @@
 #include "Components/EditableTextBox.h"
 #include "Components/ScrollBox.h"
 #include "Components/TextBlock.h"
+#include "Game/BBG_GameStateBase.h"
 #include "Player/BBG_PlayerController.h"
+#include "Player/BBG_PlayerState.h"
 #include "Player/Components/BBG_ControllerChatComponent.h"
 
 void UBBG_MainWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+	
+	if (IsValid(InputTextBox))
+	{
+		InputTextBox->OnTextCommitted.AddDynamic(this, &UBBG_MainWidget::OnChatInputTextCommited);
+	}
+
+	if (ABBG_GameStateBase* GameStateBase = GetWorld()->GetGameState<ABBG_GameStateBase>())
+	{
+		GameStateBase->OnRemainingTimeChanged.AddDynamic(this, &UBBG_MainWidget::UpdateTimerText);
+		GameStateBase->OnTurnChanged.AddDynamic(this, &UBBG_MainWidget::UpdateTurnInfo);
+	}
 }
 
 void UBBG_MainWidget::NativeDestruct()
 {
 	Super::NativeDestruct();
+	
+	if (IsValid(InputTextBox))
+	{
+		InputTextBox->OnTextCommitted.RemoveDynamic(this, &UBBG_MainWidget::OnChatInputTextCommited);
+	}
+
+	if (ABBG_GameStateBase* GameStateBase = GetWorld()->GetGameState<ABBG_GameStateBase>())
+	{
+		GameStateBase->OnRemainingTimeChanged.RemoveDynamic(this, &UBBG_MainWidget::UpdateTimerText);
+		GameStateBase->OnTurnChanged.RemoveDynamic(this, &UBBG_MainWidget::UpdateTurnInfo);
+	}
 }
 
-void UBBG_MainWidget::OnChatInputTextCommited(const FText& Text, const ETextCommit::Type CommitMethod) const
+FReply UBBG_MainWidget::NativeOnPreviewKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+	if (InKeyEvent.GetKey() == EKeys::Tab)
+	{
+		bIsGuessMode = !bIsGuessMode;
+		const FString ModeString = bIsGuessMode ? TEXT("답안 제출 모드 전환") : TEXT("채팅 모드 전환");
+		AddSystemMessage(ModeString);
+		return FReply::Handled(); // Tab InputBox 전달되는 것 차단함
+	}
+	
+	return Super::NativeOnPreviewKeyDown(InGeometry, InKeyEvent);
+}
+
+void UBBG_MainWidget::OnChatInputTextCommited(const FText& Text, const ETextCommit::Type CommitMethod)
 {
 	if (CommitMethod == ETextCommit::OnEnter)
 	{
-		ABBG_PlayerController* OwningPlayerController = GetOwningLocalPlayer<ABBG_PlayerController>();
+		ABBG_PlayerController* OwningPlayerController = GetOwningPlayer<ABBG_PlayerController>();
 		if (IsValid(OwningPlayerController) == true)
 		{
-			OwningPlayerController->GetControllerChatComponent()->ProcessChatMessageString(Text.ToString());
+			if (bIsGuessMode)
+			{
+				OwningPlayerController->GetControllerChatComponent()->ProcessGuessNumberString(Text.ToString());
+			}
+			else
+			{
+				OwningPlayerController->GetControllerChatComponent()->ProcessChatMessageString(Text.ToString());
+			}
+			
 			InputTextBox->SetText(FText());
 		}
 	}
@@ -99,5 +144,46 @@ void UBBG_MainWidget::SetNotificationMessage(const FText& InMessage, const float
 			InTimerDuration,
 			false
 		);
+	}
+}
+
+void UBBG_MainWidget::UpdateTimerText(int32 InTime)
+{
+	int32 Minutes = InTime / 60;
+	int32 Seconds = InTime % 60;
+	
+      FString PlayerName;                                                                                                                                                                                                                                      
+      if (ABBG_GameStateBase* GS = GetWorld()->GetGameState<ABBG_GameStateBase>())
+      {                                                                                                                                                                                                                                                        
+          int32 TurnIndex = GS->CurrentTurnPlayerIndex;
+          if (GS->PlayerArray.IsValidIndex(TurnIndex))                                                                                                                                                                                                         
+          {       
+              if (ABBG_PlayerState* PS = Cast<ABBG_PlayerState>(GS->PlayerArray[TurnIndex]))                                                                                                                                                                   
+                  PlayerName = PS->PlayerNameString;                                                                                                                                                                                                           
+          }                                                                                                                                                                                                                                                    
+      }                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                               
+      FText DisplayText = FText::FromString(                                                                                                                                                                                                                   
+          FString::Printf(TEXT("%s | 남은 시간: %02d:%02d"), *PlayerName, Minutes, Seconds));
+                                                                                                                                                                                                                                                               
+      TimerText->SetText(DisplayText);
+}
+
+void UBBG_MainWidget::UpdateTurnInfo(int32 InTurnIndex)
+{
+	ABBG_GameStateBase* GameStateBase = GetWorld()->GetGameState<ABBG_GameStateBase>();
+	if (IsValid(GameStateBase) == false)
+	{
+		UE_LOG(LogTemp, Error, TEXT("GameStateBase is invalid"));
+		return;
+	}
+	
+	TArray<TObjectPtr<APlayerState>> PArray = GameStateBase->PlayerArray;
+
+	ABBG_PlayerState* BBGPS = Cast<ABBG_PlayerState>(PArray[InTurnIndex]);
+	if (IsValid(BBGPS))
+	{
+		const FString TurnInfoString = FString::Printf(TEXT("현재 턴: %s"), *BBGPS->PlayerNameString);			
+		AddSystemMessage(TurnInfoString);
 	}
 }
