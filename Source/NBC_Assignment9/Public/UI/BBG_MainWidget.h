@@ -56,4 +56,7 @@ public:
 	
 	UFUNCTION()
 	void UpdateTurnInfo(int32 InTurnIndex);
+	
+	UFUNCTION()
+	void UpdateTurnInfoByName(FString InTurnPlayerName);
 };

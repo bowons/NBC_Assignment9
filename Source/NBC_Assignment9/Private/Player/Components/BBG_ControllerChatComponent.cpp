@@ -60,9 +60,8 @@ void UBBG_ControllerChatComponent::ProcessGuessNumberString(const FString& InGue
 	
 	if (const ABBG_GameStateBase* GS = GetWorld()->GetGameState<ABBG_GameStateBase>())
 	{
-		const int32 TurnIndex = GS->CurrentTurnPlayerIndex;
-		if (GS->PlayerArray.IsValidIndex(TurnIndex) == false
-			|| GS->PlayerArray[TurnIndex] != PC->GetPlayerState<ABBG_PlayerState>())
+		const ABBG_PlayerState* PS = PC->GetPlayerState<ABBG_PlayerState>();                                                                                                                                                                                         
+		if (IsValid(PS) == false || PS->PlayerNameString != GS->CurrentTurnPlayerName)                                                                                                                                                                               
 		{
 			PrintSystemMessage(TEXT("현재 당신의 턴이 아닙니다."));
 			return;

@@ -47,6 +47,7 @@ void ABBG_GameStateBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 	
 	DOREPLIFETIME(ThisClass, RemainingTime);
 	DOREPLIFETIME(ThisClass, CurrentTurnPlayerIndex);
+	DOREPLIFETIME(ThisClass, CurrentTurnPlayerName);
 }
 
 void ABBG_GameStateBase::OnRep_RemainingTime()
@@ -57,4 +58,9 @@ void ABBG_GameStateBase::OnRep_RemainingTime()
 void ABBG_GameStateBase::OnRep_CurrentTurnPlayerIndex()
 {
 	OnTurnChanged.Broadcast(CurrentTurnPlayerIndex);
+}
+
+void ABBG_GameStateBase::OnRep_CurrentTurnPlayerName()
+{
+	OnTurnChangedByName.Broadcast(CurrentTurnPlayerName);
 }

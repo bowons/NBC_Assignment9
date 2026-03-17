@@ -8,6 +8,7 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnRemainingTimeChanged, int32, InTime);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTurnChanged, int32, InTurnIndex);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTurnChangedByName, FString, InTurnPlayerName);
 
 /**
  * 
@@ -23,8 +24,8 @@ public:
 	
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastRPCBroadcastSystemMessage(const FString& InSystemMessage, float InDuration = 0.f);
-	
-	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	
 	UPROPERTY(ReplicatedUsing = OnRep_RemainingTime)
 	int32 RemainingTime;
@@ -32,8 +33,12 @@ public:
 	UPROPERTY(ReplicatedUsing = OnRep_CurrentTurnPlayerIndex)
 	int32 CurrentTurnPlayerIndex;	
 	
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentTurnPlayerName)
+	FString CurrentTurnPlayerName;
+	
 	FOnRemainingTimeChanged OnRemainingTimeChanged;
 	FOnTurnChanged OnTurnChanged;
+	FOnTurnChangedByName OnTurnChangedByName;
 	
 private:
 	UFUNCTION()
@@ -41,4 +46,7 @@ private:
 	
 	UFUNCTION()
 	void OnRep_CurrentTurnPlayerIndex();
+	
+	UFUNCTION()
+	void OnRep_CurrentTurnPlayerName();
 };

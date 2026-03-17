@@ -43,6 +43,9 @@ void ABBG_GameModeBase::OnPostLogin(AController* NewPlayer)
 		if (IsValid(BBGGameStateBase) == true)
 		{
 			BBGGameStateBase->MulticastRPCBroadcastLoginMessage(BBGPS->PlayerNameString);
+			
+			if (AllPlayerControllers.Num() - 1 == BBGGameStateBase->CurrentTurnPlayerIndex)                                                                                                                                                                              
+				BBGGameStateBase->CurrentTurnPlayerName = BBGPS->PlayerNameString;
 		}
 	}
 	else
@@ -293,6 +296,13 @@ void ABBG_GameModeBase::StartTurn(int32 PlayerIndex)
 	
 	GameStateBase->RemainingTime = 30;
 	GameStateBase->CurrentTurnPlayerIndex = PlayerIndex;
+	
+	if (AllPlayerControllers.IsValidIndex(PlayerIndex))                                                                                                                                                                                                          
+	{                                                                                                                                                                                                                                                          
+		ABBG_PlayerState* PS = AllPlayerControllers[PlayerIndex]->GetPlayerState<ABBG_PlayerState>();                                                                                                                                                            
+		if (IsValid(PS))                                                                                                                                                                                                                                       
+			GameStateBase->CurrentTurnPlayerName = PS->PlayerNameString;                                                                                                                                                                                         
+	} 
 	
 	// Timer로 시간 등록
 	GetWorld()->GetTimerManager().SetTimer( TurnTimerHandle, this, &ABBG_GameModeBase::OnTurnTimerTick, 1.f, true);
