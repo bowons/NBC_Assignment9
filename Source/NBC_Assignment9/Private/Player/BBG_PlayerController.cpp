@@ -27,11 +27,15 @@ void ABBG_PlayerController::BeginPlay()
 		GameMainWidgetInstance = CreateWidget<UBBG_MainWidget>(this, GameMainWidgetClass);
 		if (IsValid(GameMainWidgetClass))
 		{
-			GameMainWidgetInstance->AddToViewport();
 			FInputModeUIOnly InputModeUIOnly;
 			SetInputMode(InputModeUIOnly);
+			
+			GameMainWidgetInstance->AddToViewport();
+			
 			InputModeUIOnly.SetWidgetToFocus(GameMainWidgetInstance->TakeWidget());
 			bShowMouseCursor = true;
+			
+			ControllerChatComponent->Initialize(GameMainWidgetInstance);
 		}
 		else
 		{
@@ -41,9 +45,10 @@ void ABBG_PlayerController::BeginPlay()
 	
 }
 
-void ABBG_PlayerController::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+void ABBG_PlayerController::ShowNotification(const FString& InMessage, float InDuration) const
 {
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	if (IsValid(GameMainWidgetInstance) == false) 
+		return;
 	
-	DOREPLIFETIME(ThisClass, NotificationText);
+	GameMainWidgetInstance->SetNotificationMessage(FText::FromString(InMessage), InDuration);
 }

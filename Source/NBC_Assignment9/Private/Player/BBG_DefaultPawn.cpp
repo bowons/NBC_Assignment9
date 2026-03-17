@@ -13,6 +13,9 @@ void ABBG_DefaultPawn::BeginPlay()
 	FString NetRoleString = BBGFunctionLibrary::GetRoleString(this);
 	// TODO : 여기서는 로그만 찍는다, 실제 게임에는 TEXTBOX를 이용해 채팅을 주고받으면서 게임을 하도록 함
 	// 이 함수는 Network의 동작을 이해하기 위해 작성되었다.
+	FString CombinedString  = FString::Printf(TEXT("CXPawn::BeginPlay() %s [%s]"), 
+								*BBGFunctionLibrary::GetNetModeString(this), *NetRoleString);
+ 	BBGFunctionLibrary::PrintGameDebugMessage(this, CombinedString, 10.f);
 }
 
 void ABBG_DefaultPawn::PossessedBy(AController* NewController)
@@ -21,4 +24,8 @@ void ABBG_DefaultPawn::PossessedBy(AController* NewController)
 	
 	// TODO : 여기서는 로그만 찍는다, 실제 게임에는 TEXTBOX를 이용해 채팅을 주고받으면서 게임을 하도록 함
 	// 이 함수는 Network의 동작을 이해하기 위해 작성되었다.
+	FString NetRoleString = BBGFunctionLibrary::GetRoleString(this);
+	FString CombinedString  = FString::Printf(TEXT("CXPawn::PossessedBy() %s [%s]"), 
+								*BBGFunctionLibrary::GetNetModeString(this), *NetRoleString);
+	BBGFunctionLibrary::PrintGameDebugMessage(this, CombinedString, 10.f);
 }

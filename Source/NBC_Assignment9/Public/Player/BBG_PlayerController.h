@@ -21,7 +21,9 @@ public:
 	ABBG_PlayerController();
 	
 	virtual void BeginPlay() override;
-	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+	
+	//Getter
+	UBBG_ControllerChatComponent* GetControllerChatComponent() const { return ControllerChatComponent; }
 	
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "UI")
@@ -30,10 +32,10 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UBBG_MainWidget> GameMainWidgetInstance;
 	
-public:
-	UPROPERTY(Replicated, BlueprintReadOnly)
-	FText NotificationText;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Chat")
 	TObjectPtr<UBBG_ControllerChatComponent> ControllerChatComponent;
+
+public:
+	void ShowNotification(const FString& InMessage, float InDuration = 0.f) const;
+	
 };

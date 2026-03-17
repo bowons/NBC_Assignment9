@@ -17,4 +17,7 @@ class NBC_ASSIGNMENT9_API ABBG_GameStateBase : public AGameStateBase
 public:
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastRPCBroadcastLoginMessage(const FString& InNameString = FString((TEXT("XXXXXX"))));
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPCBroadcastSystemMessage(const FString& InSystemMessage, float InDuration = 0.f);
 };

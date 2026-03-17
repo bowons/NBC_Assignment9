@@ -12,6 +12,7 @@
 
 class UEditableTextBox;
 class UTextBlock;
+class UScrollBox;
 
 UCLASS()
 class NBC_ASSIGNMENT9_API UBBG_MainWidget : public UUserWidget
@@ -23,10 +24,15 @@ protected:
 	TObjectPtr<UTextBlock> TimerText;
 	
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UTextBlock> ChatTextPanel;
+	TObjectPtr<UTextBlock> NotificationText;
+	
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UScrollBox> ChatTextScrollPanel;
 	
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UEditableTextBox> InputTextBox;
+	
+	FTimerHandle NotificationTimerHandle;
 	
 protected:
 	virtual void NativeConstruct() override;
@@ -34,6 +40,10 @@ protected:
 	
 protected:
 	UFUNCTION()
-	void OnChatInputTextCommited(const FText& Text, ETextCommit::Type CommitMethod);
+	void OnChatInputTextCommited(const FText& Text, ETextCommit::Type CommitMethod) const;
 	
+public:
+	void AddChatMessage(const FString& InMessage) const;
+	void AddSystemMessage(const FString& InMessage) const;
+	void SetNotificationMessage(const FText& InMessage, const float InTimerDuration = 0.f);	
 };

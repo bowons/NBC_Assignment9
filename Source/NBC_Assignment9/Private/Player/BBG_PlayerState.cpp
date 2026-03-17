@@ -22,7 +22,13 @@ void ABBG_PlayerState::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty
 
 FString ABBG_PlayerState::GetPlayerInfoString() const
 {
-	FString PlayerInfoString = PlayerNameString + TEXT("(") + FString::FromInt(CurrentGuessCount) + TEXT("/")
-								+ FString::FromInt(MaxGuessCount) + TEXT(")");
+	FString PlayerInfoString = PlayerNameString;
+	// + TEXT("(") + FString::FromInt(CurrentGuessCount) + TEXT("/") + FString::FromInt(MaxGuessCount) + TEXT(")")
 	return PlayerInfoString;
+}
+
+FString ABBG_PlayerState::GetGuessCountString() const
+{
+	FString GuessInfoString = TEXT("현재 추측 횟수: (") + FString::FromInt(CurrentGuessCount) + TEXT(" / ") + FString::FromInt(MaxGuessCount) + TEXT(")");
+	return GuessInfoString;
 }
