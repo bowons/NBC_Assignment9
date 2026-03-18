@@ -145,6 +145,19 @@ void ABBG_GameModeBase::ResetGame()
 			BBGPS->bHasPlayedThisTurn = false;
 		}
 	}
+	
+	if (ABBG_GameStateBase* GS = GetGameState<ABBG_GameStateBase>())
+	{
+		GS->MulticastRPCBroadcastSystemMessage(TEXT("새 게임이 시작됩니다."), 3.0f);
+
+		for (const auto& PC : AllPlayerControllers)
+		{
+			if (IsValid(PC))
+				PC->GetControllerChatComponent()
+					->ClientRPCPrintSystemMessage(TEXT("새 게임이 시작됩니다."));
+		}
+
+	}
 }
 
 FString ABBG_GameModeBase::JudgeGuessNumber(const FString& InGuessString)
@@ -300,8 +313,12 @@ void ABBG_GameModeBase::StartTurn(int32 PlayerIndex)
 	if (AllPlayerControllers.IsValidIndex(PlayerIndex))                                                                                                                                                                                                          
 	{                                                                                                                                                                                                                                                          
 		ABBG_PlayerState* PS = AllPlayerControllers[PlayerIndex]->GetPlayerState<ABBG_PlayerState>();                                                                                                                                                            
-		if (IsValid(PS))                                                                                                                                                                                                                                       
-			GameStateBase->CurrentTurnPlayerName = PS->PlayerNameString;                                                                                                                                                                                         
+		if (IsValid(PS))
+		{
+			GameStateBase->CurrentTurnPlayerName = PS->PlayerNameString;
+			GameStateBase->MulticastRPCBroadcastSystemMessage(
+				FString::Printf(TEXT("%s의 턴입니다."), *PS->PlayerNameString), 3.0f);
+		}
 	} 
 	
 	// Timer로 시간 등록

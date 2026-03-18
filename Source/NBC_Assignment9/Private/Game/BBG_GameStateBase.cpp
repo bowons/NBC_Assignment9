@@ -57,7 +57,7 @@ void ABBG_GameStateBase::OnRep_RemainingTime()
 
 void ABBG_GameStateBase::OnRep_CurrentTurnPlayerIndex()
 {
-	OnTurnChanged.Broadcast(CurrentTurnPlayerIndex);
+	//OnTurnChanged.Broadcast(CurrentTurnPlayerIndex);
 }
 
 void ABBG_GameStateBase::OnRep_CurrentTurnPlayerName()
